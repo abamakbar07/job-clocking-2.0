@@ -128,6 +128,9 @@ async function scheduleJobFlow(userId) {
     });
 
     const catIndex = await askQuestion('Select category number: ');
+    if (catIndex < 1 || catIndex > categories.length) {
+      throw new Error('Invalid category number');
+    }
     const selectedCategory = categories[catIndex - 1];
 
     const categoryJobs = subCategories.filter(sub => sub.group_id === selectedCategory.group_id);
@@ -137,35 +140,27 @@ async function scheduleJobFlow(userId) {
     });
 
     const jobIndex = await askQuestion('Select job number: ');
+    if (jobIndex < 1 || jobIndex > categoryJobs.length) {
+      throw new Error('Invalid job number');
+    }
     const selectedJob = categoryJobs[jobIndex - 1];
 
     console.log('\nEnter schedule details:');
     const startTimeStr = await askQuestion('Start time (HH:mm): ');
-    const endTimeStr = await askQuestion('End time (HH:mm): ');
-
     const [startHours, startMinutes] = startTimeStr.split(':');
-    const [endHours, endMinutes] = endTimeStr.split(':');
 
     const startTime = new Date();
     startTime.setHours(parseInt(startHours), parseInt(startMinutes), 0);
 
-    const endTime = new Date();
-    endTime.setHours(parseInt(endHours), parseInt(endMinutes), 0);
-
-    // Adjust dates if times are for next day
     if (startTime < Date.now()) {
       startTime.setDate(startTime.getDate() + 1);
     }
-    if (endTime <= startTime) {
-      endTime.setDate(endTime.getDate() + 1);
-    }
 
-    await employeeService.scheduleJob(selectedJob.activity_id, startTime, endTime);
+    await employeeService.scheduleJob(selectedJob.activity_id, startTime);
     console.log('\nJob scheduled successfully!');
     console.log(`Start: ${startTime.toLocaleString()}`);
-    console.log(`End: ${endTime.toLocaleString()}`);
 
-    // Get latest status and redisplay
+    // Refresh display
     const employeeData = await employeeService.getEmployeeStatus(userId);
     const statusTable = employeeService.displayEmployeeStatus(employeeData);
     displayScreen(statusTable);

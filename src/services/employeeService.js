@@ -1,5 +1,6 @@
 const apiService = require('./apiService');
 const Table = require('cli-table3');
+const chalk = require('chalk');
 const logger = require('../utils/logger');
 const { API_CONFIG } = require('../config/constants');
 const { JOB_CATEGORIES, JOB_SUBCATEGORIES } = require('../config/jobCategories');
@@ -19,6 +20,13 @@ class EmployeeService {
     this.currentEmployee = null;
     this.currentJobId = null;
     this.currentClockingRef = null;
+    this.schedules = [];
+
+    this.scheduleTable = new Table({
+      head: ['#', 'Activity', 'Start Time', 'Status'].map(h => chalk.yellow(h)),
+      colWidths: [5, 25, 25, 15],
+      style: { head: [], border: [] }
+    });
   }
 
   async getEmployeeStatus(userId, siteId = 'IDCBT') {
@@ -93,6 +101,7 @@ Current Activity:
   }
 
   displayEmployeeStatus(employeeData) {
+    const scheduleList = this.displayScheduleList();
     const userDataDisplay = this.displayUserData();
     this.table.length = 0;
     this.table.push([
@@ -104,10 +113,11 @@ Current Activity:
       employeeData.clockingRef,
       employeeData.status
     ]);
-    return `${userDataDisplay}\n\n${this.table.toString()}`;
+    
+    return `${scheduleList}${userDataDisplay}\n\n${this.table.toString()}`;
   }
 
-  async scheduleJob(activityId, startTime, endTime) {
+  async scheduleJob(activityId, startTime) {
     if (!this.currentEmployee) {
       throw new Error('No employee selected');
     }
@@ -115,8 +125,8 @@ Current Activity:
     const schedule = {
       activityId,
       startTime,
-      endTime,
-      isActive: true
+      isActive: true,
+      jobName: JOB_SUBCATEGORIES.find(job => job.activity_id === activityId)?.job_clocking_name || 'Unknown'
     };
 
     // Start job at scheduled time
@@ -125,6 +135,7 @@ Current Activity:
       setTimeout(async () => {
         try {
           await this.startJob(activityId);
+          schedule.isActive = false;
           logger.info(`Scheduled job started at ${startTime.toLocaleString()}`);
         } catch (error) {
           logger.error('Scheduled job start failed:', error);
@@ -132,20 +143,24 @@ Current Activity:
       }, startDelay);
     }
 
-    // Stop job at scheduled time
-    const endDelay = endTime.getTime() - Date.now();
-    if (endDelay > 0) {
-      setTimeout(async () => {
-        try {
-          await this.stopCurrentJob();
-          logger.info(`Scheduled job stopped at ${endTime.toLocaleString()}`);
-        } catch (error) {
-          logger.error('Scheduled job stop failed:', error);
-        }
-      }, endDelay);
-    }
-
+    this.schedules.push(schedule);
     return schedule;
+  }
+
+  displayScheduleList() {
+    if (this.schedules.length === 0) return '';
+
+    this.scheduleTable.length = 0;
+    this.schedules.forEach((schedule, index) => {
+      this.scheduleTable.push([
+        chalk.yellow(index + 1),
+        chalk.yellow(schedule.jobName),
+        chalk.yellow(schedule.startTime.toLocaleString()),
+        chalk.yellow(schedule.isActive ? 'Pending' : 'Started')
+      ]);
+    });
+
+    return `\n${chalk.yellow('Scheduled Jobs:')}\n${this.scheduleTable.toString()}\n`;
   }
 }
 
