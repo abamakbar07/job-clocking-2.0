@@ -1,9 +1,12 @@
 const axios = require('axios');
-const { API_CONFIG } = require('../config/constants');
+const { API_CONFIG, SITE_ID, EMPLOYER_ID } = require('../config/constants');
 const logger = require('../utils/logger');
 
 class ApiService {
   constructor() {
+    if (!API_CONFIG.BASE_URL) {
+      throw new Error('API_BASE_URL environment variable is not set');
+    }
     this.client = axios.create({
       baseURL: API_CONFIG.BASE_URL,
       headers: API_CONFIG.HEADERS,
@@ -30,8 +33,8 @@ class ApiService {
       const formattedDate = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
 
       const payload = {
-        site_id: "IDCBT",
-        employer_id: "DSV",
+        site_id: SITE_ID,
+        employer_id: EMPLOYER_ID,
         employee_id: employeeData.employee_id,
         activity_id: parseInt(activityId),
         status: "Open",

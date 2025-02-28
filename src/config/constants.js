@@ -1,6 +1,8 @@
+require('dotenv').config();
+
 const API_CONFIG = {
-    BASE_URL: 'http://rpt.apac.dsv.com:81/api/JobClocking',
-    DEVICE_IP: '10.132.96.240',
+    BASE_URL: process.env.API_BASE_URL,
+    DEVICE_IP: process.env.DEVICE_IP,
     HEADERS: {
       'accept': 'application/json, text/plain, */*',
       'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -11,5 +13,7 @@ const API_CONFIG = {
   };
   
   module.exports = {
-    API_CONFIG
+    API_CONFIG,
+    SITE_ID: process.env.SITE_ID,
+    EMPLOYER_ID: process.env.EMPLOYER_ID
   }; 
