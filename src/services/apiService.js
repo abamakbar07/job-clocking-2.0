@@ -5,9 +5,8 @@ const logger = require('../utils/logger');
 class ApiService {
   constructor() {
     this.client = axios.create({
-      baseURL: config.apiUrl,
+      baseURL: 'http://rpt.apac.dsv.com:81/api',
       headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json'
       },
       timeout: 5000
