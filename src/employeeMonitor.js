@@ -106,27 +106,36 @@ async function scheduleJobFlow(userId) {
     const jobIndex = await askQuestion('Select job number: ');
     const selectedJob = categoryJobs[jobIndex - 1];
 
-    const scheduleTime = await askQuestion('Enter schedule time (HH:mm): ');
-    const [hours, minutes] = scheduleTime.split(':');
-    
-    const scheduleDate = new Date();
-    scheduleDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    console.log('\nEnter schedule details:');
+    const startTimeStr = await askQuestion('Start time (HH:mm): ');
+    const endTimeStr = await askQuestion('End time (HH:mm): ');
 
-    const delay = scheduleDate.getTime() - Date.now();
-    if (delay < 0) {
-      scheduleDate.setDate(scheduleDate.getDate() + 1);
+    const [startHours, startMinutes] = startTimeStr.split(':');
+    const [endHours, endMinutes] = endTimeStr.split(':');
+
+    const startTime = new Date();
+    startTime.setHours(parseInt(startHours), parseInt(startMinutes), 0);
+
+    const endTime = new Date();
+    endTime.setHours(parseInt(endHours), parseInt(endMinutes), 0);
+
+    // Adjust dates if times are for next day
+    if (startTime < Date.now()) {
+      startTime.setDate(startTime.getDate() + 1);
+    }
+    if (endTime <= startTime) {
+      endTime.setDate(endTime.getDate() + 1);
     }
 
-    setTimeout(async () => {
-      try {
-        await employeeService.startJob(selectedJob.activity_id);
-        console.log(`Scheduled job started at ${scheduleDate.toLocaleTimeString()}`);
-      } catch (error) {
-        logger.error('Error in scheduled job:', error);
-      }
-    }, delay);
+    await employeeService.scheduleJob(selectedJob.activity_id, startTime, endTime);
+    console.log('\nJob scheduled successfully!');
+    console.log(`Start: ${startTime.toLocaleString()}`);
+    console.log(`End: ${endTime.toLocaleString()}`);
 
-    console.log(`Job scheduled for ${scheduleDate.toLocaleTimeString()}`);
+    // Get latest status and redisplay
+    const employeeData = await employeeService.getEmployeeStatus(userId);
+    const statusTable = employeeService.displayEmployeeStatus(employeeData);
+    displayScreen(statusTable);
   } catch (error) {
     logger.error('Error scheduling job:', error);
     console.log('Failed to schedule job:', error.message);

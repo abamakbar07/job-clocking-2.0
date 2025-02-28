@@ -1,5 +1,7 @@
 const apiService = require('./apiService');
 const Table = require('cli-table3');
+const logger = require('../utils/logger');
+const { JOB_CATEGORIES, JOB_SUBCATEGORIES } = require('../config/jobCategories');
 
 class EmployeeService {
   constructor() {
@@ -19,9 +21,10 @@ class EmployeeService {
   }
 
   async getAvailableJobs() {
-    const categories = await apiService.get('/GetCategories');
-    const subCategories = await apiService.get('/GetSubCategories');
-    return { categories, subCategories };
+    return {
+      categories: JOB_CATEGORIES,
+      subCategories: JOB_SUBCATEGORIES
+    };
   }
 
   async startJob(activityId) {
@@ -62,6 +65,47 @@ class EmployeeService {
       employeeData.status
     ]);
     return this.table.toString();
+  }
+
+  async scheduleJob(activityId, startTime, endTime) {
+    if (!this.currentEmployee) {
+      throw new Error('No employee selected');
+    }
+
+    const schedule = {
+      activityId,
+      startTime,
+      endTime,
+      isActive: true
+    };
+
+    // Start job at scheduled time
+    const startDelay = startTime.getTime() - Date.now();
+    if (startDelay > 0) {
+      setTimeout(async () => {
+        try {
+          await this.startJob(activityId);
+          logger.info(`Scheduled job started at ${startTime.toLocaleString()}`);
+        } catch (error) {
+          logger.error('Scheduled job start failed:', error);
+        }
+      }, startDelay);
+    }
+
+    // Stop job at scheduled time
+    const endDelay = endTime.getTime() - Date.now();
+    if (endDelay > 0) {
+      setTimeout(async () => {
+        try {
+          await this.stopCurrentJob();
+          logger.info(`Scheduled job stopped at ${endTime.toLocaleString()}`);
+        } catch (error) {
+          logger.error('Scheduled job stop failed:', error);
+        }
+      }, endDelay);
+    }
+
+    return schedule;
   }
 }
 
