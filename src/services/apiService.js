@@ -51,14 +51,15 @@ class ApiService {
 
   async stopJob(jobClockingId) {
     try {
+      const now = new Date();
+      const formattedDate = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+
       const payload = {
-        job_clocking_id: jobClockingId,
-        end_time: new Date().toLocaleString(),
-        status: "Closed",
-        status_message: "Closed by job clocking application"
+        end_time: formattedDate,
+        job_clocking_id: jobClockingId
       };
 
-      const response = await this.client.post('/JobClocking/UpdateobClocking', payload);
+      const response = await this.client.post('UpdateobClocking', payload);
       return response.data;
     } catch (error) {
       logger.error('Stop Job Failed:', error);

@@ -120,6 +120,27 @@ async function stopJobFlow() {
 
 async function scheduleJobFlow(userId) {
   try {
+    console.log('\nSchedule Options:');
+    console.log('1. Schedule Start Job');
+    console.log('2. Schedule Stop Current Job');
+    
+    const option = await askQuestion('Select option: ');
+    
+    if (option === '1') {
+      await scheduleStartJob(userId);
+    } else if (option === '2') {
+      await scheduleStopJob(userId);
+    } else {
+      throw new Error('Invalid option');
+    }
+  } catch (error) {
+    logger.error('Error in schedule flow:', error);
+    console.log('Failed to schedule:', error.message);
+  }
+}
+
+async function scheduleStartJob(userId) {
+  try {
     const { categories, subCategories } = await employeeService.getAvailableJobs();
     
     console.log('\nAvailable Job Categories:');
@@ -168,6 +189,28 @@ async function scheduleJobFlow(userId) {
     logger.error('Error scheduling job:', error);
     console.log('Failed to schedule job:', error.message);
   }
+}
+
+async function scheduleStopJob(userId) {
+  console.log('\nEnter schedule details:');
+  const stopTimeStr = await askQuestion('Stop time (HH:mm): ');
+  const [stopHours, stopMinutes] = stopTimeStr.split(':');
+
+  const stopTime = new Date();
+  stopTime.setHours(parseInt(stopHours), parseInt(stopMinutes), 0);
+
+  if (stopTime < Date.now()) {
+    stopTime.setDate(stopTime.getDate() + 1);
+  }
+
+  await employeeService.scheduleStopJob(stopTime);
+  console.log('\nStop job scheduled successfully!');
+  console.log(`Stop Time: ${stopTime.toLocaleString()}`);
+
+  // Refresh display
+  const employeeData = await employeeService.getEmployeeStatus(userId);
+  const statusTable = employeeService.displayEmployeeStatus(employeeData);
+  displayScreen(statusTable);
 }
 
 function askQuestion(question) {
