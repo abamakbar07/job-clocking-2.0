@@ -17,7 +17,8 @@ function displayScreen(statusTable, showMenu = true) {
     console.log('1. Start Job');
     console.log('2. Stop Current Job');
     console.log('3. Schedule Job');
-    console.log('4. Exit');
+    console.log('4. Refresh Status');
+    console.log('5. Exit');
     console.log('\nEnter command number:');
   }
 }
@@ -34,16 +35,25 @@ async function handleUserInput(input, userId) {
       await scheduleJobFlow(userId);
       break;
     case '4':
+      await refreshStatus(userId);
+      break;
+    case '5':
       console.log('Exiting...');
       process.exit(0);
     default:
       console.log('Invalid command');
   }
-  
-  // Get latest status and redisplay
-  const employeeData = await employeeService.getEmployeeStatus(userId);
-  const statusTable = employeeService.displayEmployeeStatus(employeeData);
-  displayScreen(statusTable);
+}
+
+async function refreshStatus(userId) {
+  try {
+    const employeeData = await employeeService.getEmployeeStatus(userId);
+    const statusTable = employeeService.displayEmployeeStatus(employeeData);
+    displayScreen(statusTable);
+  } catch (error) {
+    logger.error('Error refreshing status:', error);
+    console.log('Failed to refresh status:', error.message);
+  }
 }
 
 async function startJobFlow(userId) {
@@ -150,21 +160,9 @@ function askQuestion(question) {
 
 async function startMonitoring(userId) {
   try {
-    // Initial fetch and display
     const employeeData = await employeeService.getEmployeeStatus(userId);
     const statusTable = employeeService.displayEmployeeStatus(employeeData);
     displayScreen(statusTable);
-
-    // Set up periodic refresh
-    setInterval(async () => {
-      try {
-        const updatedData = await employeeService.getEmployeeStatus(userId);
-        const updatedTable = employeeService.displayEmployeeStatus(updatedData);
-        displayScreen(updatedTable);
-      } catch (error) {
-        logger.error('Error updating employee status:', error);
-      }
-    }, 5000);
 
     rl.on('line', (input) => handleUserInput(input, userId));
   } catch (error) {
