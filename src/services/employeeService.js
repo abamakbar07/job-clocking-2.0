@@ -53,7 +53,6 @@ class EmployeeService {
   }
 
   displayEmployeeStatus(employeeData) {
-    console.clear();
     this.table.length = 0;
     this.table.push([
       employeeData.employeeId,
@@ -62,7 +61,7 @@ class EmployeeService {
       employeeData.jobId,
       employeeData.status
     ]);
-    console.log(this.table.toString());
+    return this.table.toString();
   }
 }
 
