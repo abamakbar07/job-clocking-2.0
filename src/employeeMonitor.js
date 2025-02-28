@@ -9,7 +9,6 @@ const rl = readline.createInterface({
 
 function displayScreen(statusTable, showMenu = true) {
   console.clear();
-  console.log('Employee Status:');
   console.log(statusTable);
   
   if (showMenu) {
@@ -66,22 +65,46 @@ async function startJobFlow(userId) {
     });
 
     const catIndex = await askQuestion('Select category number: ');
+    if (catIndex < 1 || catIndex > categories.length) {
+      throw new Error('Invalid category number');
+    }
     const selectedCategory = categories[catIndex - 1];
 
     const categoryJobs = subCategories.filter(sub => sub.group_id === selectedCategory.group_id);
+    if (categoryJobs.length === 0) {
+      throw new Error('No jobs available for this category');
+    }
+
     console.log('\nAvailable Jobs:');
     categoryJobs.forEach((job, index) => {
       console.log(`${index + 1}. ${job.job_clocking_name}`);
     });
 
     const jobIndex = await askQuestion('Select job number: ');
+    if (jobIndex < 1 || jobIndex > categoryJobs.length) {
+      throw new Error('Invalid job number');
+    }
     const selectedJob = categoryJobs[jobIndex - 1];
+
+    if (!selectedJob || !selectedJob.activity_id) {
+      throw new Error('Invalid job selection');
+    }
 
     await employeeService.startJob(selectedJob.activity_id);
     console.log('Job started successfully!');
+    
+    // Refresh display after job start
+    const employeeData = await employeeService.getEmployeeStatus(userId);
+    const statusTable = employeeService.displayEmployeeStatus(employeeData);
+    displayScreen(statusTable);
   } catch (error) {
     logger.error('Error starting job:', error);
     console.log('Failed to start job:', error.message);
+    
+    // Refresh display after error
+    const employeeData = await employeeService.getEmployeeStatus(userId);
+    const statusTable = employeeService.displayEmployeeStatus(employeeData);
+    displayScreen(statusTable);
   }
 }
 

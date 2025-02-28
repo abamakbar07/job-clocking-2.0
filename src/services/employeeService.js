@@ -1,16 +1,24 @@
 const apiService = require('./apiService');
 const Table = require('cli-table3');
 const logger = require('../utils/logger');
+const { API_CONFIG } = require('../config/constants');
 const { JOB_CATEGORIES, JOB_SUBCATEGORIES } = require('../config/jobCategories');
 
 class EmployeeService {
   constructor() {
-    this.table = new Table({
-      head: ['Employee ID', 'Name', 'Current Activity', 'Job ID', 'Status'],
-      colWidths: [15, 25, 25, 15, 15]
+    this.userTable = new Table({
+      head: ['Site ID', 'Employer ID', 'Employee ID', 'Device'],
+      colWidths: [15, 15, 15, 25]
     });
+    
+    this.table = new Table({
+      head: ['Employee ID', 'Name', 'Activity ID', 'Activity Name', 'Job ID', 'Clocking Ref', 'Status'],
+      colWidths: [12, 20, 12, 25, 12, 15, 12]
+    });
+    
     this.currentEmployee = null;
     this.currentJobId = null;
+    this.currentClockingRef = null;
   }
 
   async getEmployeeStatus(userId, siteId = 'IDCBT') {
@@ -49,22 +57,54 @@ class EmployeeService {
     return {
       employeeId: data.employee_id,
       name: data.display_name,
-      currentActivity: data.activity_name || 'None',
+      activityId: data.activity_id || 'N/A',
+      activityName: data.activity_name || 'None',
       jobId: this.currentJobId || 'N/A',
+      clockingRef: data.clockingReference || 'N/A',
       status: this.currentJobId ? 'Working' : 'Idle'
     };
   }
 
+  displayUserData() {
+    if (!this.currentEmployee) return 'No employee data available';
+
+    return `
+Employee Details:
+• Site ID: ${this.currentEmployee.site_id}
+• Employer ID: ${this.currentEmployee.employer_id}
+• Employee ID: ${this.currentEmployee.employee_id}
+• Name: ${this.currentEmployee.name}
+• External Employee ID: ${this.currentEmployee.extern_employee_id}
+• Department: ${this.currentEmployee.department_id || 'N/A'}
+• Description: ${this.currentEmployee.description || 'N/A'}
+• First Name: ${this.currentEmployee.first_name}
+• Middle Name: ${this.currentEmployee.middle_name || 'N/A'}
+• Last Name: ${this.currentEmployee.last_name}
+
+Current Activity:
+• Activity ID: ${this.currentEmployee.activity_id || 'N/A'}
+• Activity Name: ${this.currentEmployee.activity_name || 'None'}
+• Job Clocking ID: ${this.currentEmployee.job_clocking_id || 'N/A'}
+• Clocking Reference: ${this.currentEmployee.clockingReference || 'N/A'}
+• Status: ${this.currentEmployee.job_clocking_id ? 'Working' : 'Idle'}
+• Manual Entry: ${this.currentEmployee.iS_MANUAL_ENTRY === '1' ? 'Yes' : 'No'}
+• Device: ${API_CONFIG.DEVICE_IP}
+`;
+  }
+
   displayEmployeeStatus(employeeData) {
+    const userDataDisplay = this.displayUserData();
     this.table.length = 0;
     this.table.push([
       employeeData.employeeId,
       employeeData.name,
-      employeeData.currentActivity,
+      employeeData.activityId,
+      employeeData.activityName,
       employeeData.jobId,
+      employeeData.clockingRef,
       employeeData.status
     ]);
-    return this.table.toString();
+    return `${userDataDisplay}\n\n${this.table.toString()}`;
   }
 
   async scheduleJob(activityId, startTime, endTime) {

@@ -38,7 +38,7 @@ class ApiService {
         DeviceName: API_CONFIG.DEVICE_IP
       };
 
-      const response = await this.client.post('/StartJob', payload);
+      const response = await this.client.post('/JobClocking/AddJobClocking', payload);
       return response.data;
     } catch (error) {
       logger.error('Start Job Failed:', error);
@@ -49,11 +49,13 @@ class ApiService {
   async stopJob(jobClockingId) {
     try {
       const payload = {
+        job_clocking_id: jobClockingId,
         end_time: new Date().toLocaleString(),
-        job_clocking_id: jobClockingId
+        status: "Closed",
+        status_message: "Closed by job clocking application"
       };
 
-      const response = await this.client.post('/StopJob', payload);
+      const response = await this.client.post('/JobClocking/UpdateobClocking', payload);
       return response.data;
     } catch (error) {
       logger.error('Stop Job Failed:', error);
