@@ -26,19 +26,22 @@ class ApiService {
 
   async startJob(employeeData, activityId) {
     try {
+      const now = new Date();
+      const formattedDate = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+
       const payload = {
         site_id: "IDCBT",
         employer_id: "DSV",
         employee_id: employeeData.employee_id,
-        activity_id: activityId,
+        activity_id: parseInt(activityId),
         status: "Open",
         status_message: "Created by job clocking application",
-        start_time: new Date().toLocaleString(),
+        start_time: formattedDate,
         ClockingReference: "",
         DeviceName: API_CONFIG.DEVICE_IP
       };
 
-      const response = await this.client.post('/JobClocking/AddJobClocking', payload);
+      const response = await this.client.post('AddJobClocking', payload);
       return response.data;
     } catch (error) {
       logger.error('Start Job Failed:', error);
